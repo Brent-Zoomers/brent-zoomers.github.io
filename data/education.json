@@ -1,13 +1,12 @@
 [
     {
-      "date": "2022 - 2024",
+      "date": "2021 - 2023",
       "degree": "Master's Degree in Computer Science",
-      "thesis": "Thesis: Many Minds, One Decision: Leveraging Multiple AI Models for Informed Decision-Making",
+      "thesis": "Template",
       "pdf": "/theses/Master_Thesis.pdf",
       "advisors": [
-        { "name": "Prof. dr. Kris Luyten", "link": "https://www.krisluyten.net/" },
-        { "name": "Prof. dr. Jori Liesenborgs", "link": "https://www.uhasselt.be/nl/wie-is-wie/detail/jori-liesenborgs" },
-        { "name": "Prof. dr. Gustavo Rovelo Ruiz", "link": "https://www.uhasselt.be/nl/wie-is-wie/gustavo-roveloruiz" }
+        { "name": "Prof. dr. Nick Michiels"},
+        { "name": "dr. Lode Jorissen"}
       ],
       "university": "Hasselt University"
     },

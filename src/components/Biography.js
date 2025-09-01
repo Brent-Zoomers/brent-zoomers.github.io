@@ -99,12 +99,12 @@ const Biography = () => {
                   About Me
                 </Typography>
                 <Typography variant="body2" color="textSecondary" paragraph>
-                  I am passionate about everything related to machine learning 🤖. My current focus lies in exploring the use of multiple machine learning models within the exciting domain of human-computer interaction. I aim to enhance trust and improve decision-making processes 🎯, all while keeping things transparent and explainable.
+                  I am passionate about everything related to 3DGS and NVS.
                 </Typography>
 
                 {/* Personal Interests Section */}
                 <Typography variant="body2" color="textSecondary" paragraph>
-                When I'm not busy working on AI <em>almost</em> taking over the world (in a totally explainable way, of course 😅), you'll find me exploring the world, backpacking through nature 🥾, traveling to discover new places and experiences 🌍, or simply taking my dog for a walk —a much smaller adventure, but just as fulfilling.
+                  When I'm not working on 3DGS-related things, I like to go for a run and travel around the world.
                 </Typography>
               </Box>
             </Grid>

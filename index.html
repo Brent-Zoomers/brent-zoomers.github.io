@@ -55,6 +55,56 @@
 
     <!-- START OF PAPER ENTRY -->
     <!-- To add more papers, copy this whole <tr> block -->
+    <tr onmouseout="paper1_stop()" onmouseover="paper1_start()" bgcolor="#fafafa">
+      <td style="padding:16px;width:20%;vertical-align:middle">
+        <div class="one">
+          <div class="two" id='paper1_image'>
+            <!-- If you have a video preview, uncomment the video tag and remove the first img -->
+            <!--
+            <video width=100% height=100% muted autoplay loop>
+              <source src="images/paper1_video.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            -->
+            <img src='./images/diverse.png' width=100%>
+          </div>
+          <img src='./images/diverse.png' width=100%>
+        </div>
+        <script type="text/javascript">
+          function paper1_start() {
+            document.getElementById('paper1_image').style.opacity = "1";
+          }
+
+          function paper1_stop() {
+            document.getElementById('paper1_image').style.opacity = "0";
+          }
+          paper1_stop()
+        </script>
+      </td>
+      <td style="padding:8px;width:80%;vertical-align:middle">
+        <a href="./nvgs/index.html">
+          <span class="papertitle">DIVERSE: Disagreement-Inducing Vector Evolution for Rashomon Set Exploration</span>
+        </a>
+        <br>
+        Gilles Eerlings, 
+         <strong>Brent Zoomers</strong>,
+        Jori Liesenborgs, 
+        Gustavo Rovelo Ruiz, 
+        Kris Luyten
+        <br><i>ICLR, 2026</i><br>
+
+        <a href="https://arxiv.org/abs/2601.20627">arXiv</a>
+   
+        <p>
+         We propose a framework for systematically exploring the Rashomon set of deep neural networks, 
+         the collection of models that match a reference model's accuracy while differing in their predictive behavior  
+        </p>
+      </td>
+    </tr>
+    <!-- END OF PAPER ENTRY -->
+
+    <!-- START OF PAPER ENTRY -->
+    <!-- To add more papers, copy this whole <tr> block -->
     <tr onmouseout="paper1_stop()" onmouseover="paper1_start()" bgcolor="#ffffd0">
       <td style="padding:16px;width:20%;vertical-align:middle">
         <div class="one">

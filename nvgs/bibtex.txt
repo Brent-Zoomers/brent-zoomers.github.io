@@ -1,0 +1,9 @@
+@misc{zoomers2025nvgs,
+    title={{NVGS}: Neural Visibility for Occlusion Culling in {3D} {Gaussian} Splatting}, 
+    author={Brent Zoomers and Florian Hahlbohm and Joni Vanherck and Lode Jorissen and Marcus Magnor and Nick Michiels},
+    year={2025},
+    eprint={2511.19202},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV},
+    url={https://arxiv.org/abs/2511.19202}, 
+}

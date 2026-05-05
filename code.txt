@@ -1,0 +1,15 @@
+result: dict[str, dict[str, Any]] = {}
+    for color, cell_counts in per_color_cell_counts.items():
+        score_set = per_color_score_sets[color]
+        base_score = sum(cell_counts[i] * score_set.cell_scores[i] for i in range(config.num_cells))
+        complete_sets = min(cell_counts) if cell_counts else 0
+        bonus_score = sum(score_set.cell_scores) * complete_sets
+        total_score = base_score + bonus_score
+        result[color] = {
+            "score_set_name": score_set.name,
+            "base_score": base_score,
+            "total_score": total_score,
+            "double_bonus": complete_sets > 0,
+            "complete_sets": complete_sets,
+            "cell_counts": cell_counts,
+        }

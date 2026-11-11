@@ -25,7 +25,7 @@
                   Brent Zoomers
                 </p>
                 <p>
-                I am a PhD student at Hasselt University under the supervision of Prof. Dr. Nick Michiels and currently doing an internship at the TU Braunschweig under supervision of Prof. Dr.-Ing. Marcus Magnor. 
+                I am a PhD student at Hasselt University under the supervision of Prof. Dr. Nick Michiels and currently doing an internship at Seoul National University under supervision of Prof. Dr. Jaesik Park. 
                 My research focuses on Computer Vision & Graphics, specifically Novel View Synthesis.
                 </p>
                 <p>
@@ -54,6 +54,57 @@
             </tr>
           </tbody></table>
           <table style="width:100%;border:0px;border-spacing:0px 10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+
+     <!-- START OF PAPER ENTRY -->
+    <!-- To add more papers, copy this whole <tr> block -->
+    <tr onmouseout="paper1_stop()" onmouseover="paper1_start()" bgcolor="#fafafa">
+      <td style="padding:16px;width:20%;vertical-align:middle">
+        <div class="one">
+          <div class="two" id='paper1_image'>
+            <!-- If you have a video preview, uncomment the video tag and remove the first img -->
+            <!--
+            <video width=100% height=100% muted autoplay loop>
+              <source src="images/paper1_video.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            -->
+            <img src='./images/diverse.png' width=100%>
+          </div>
+          <img src='./images/diverse.png' width=100%>
+        </div>
+        <script type="text/javascript">
+          function paper1_start() {
+            document.getElementById('paper1_image').style.opacity = "1";
+          }
+
+          function paper1_stop() {
+            document.getElementById('paper1_image').style.opacity = "0";
+          }
+          paper1_stop()
+        </script>
+      </td>
+      <td style="padding:8px;width:80%;vertical-align:middle">
+        <a href="https://www.researchgate.net/publication/417186842_LoC-IN_Real-Time_Localization_of_Cameras_in_Neural_Rendered_Prior_LiDAR_Maps">
+          <span class="papertitle">LoC-IN: Real-Time Localization of Cameras in Neural Rendered Prior LiDAR Maps</span>
+        </a>
+        <br>
+        Joni Vanherck, 
+        Steven Moonen,
+         <strong>Brent Zoomers</strong>,
+        Kobe Werner,
+        Jeroen Put,
+        Lode Jorissen,
+        Nick Michiels
+        <br><i>RA-L, 2026</i><br>
+
+        <a href="https://arxiv.org/abs/2601.20627">arXiv</a>
+   
+        <p>
+         We propose a real-time method for localizing a camera within a pre-captured, highly accurate colored LiDAR point cloud that bypasses drift by using a recent neural rendering method.
+        </p>
+      </td>
+    </tr>
+    <!-- END OF PAPER ENTRY -->        
 
     <!-- START OF PAPER ENTRY -->
     <!-- To add more papers, copy this whole <tr> block -->

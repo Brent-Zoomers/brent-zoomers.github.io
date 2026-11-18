@@ -1,0 +1,462 @@
+/* ATS project page: one centred column on a white background. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+a {
+  color: #1a5fb4;
+}
+
+.page,
+.footer {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Title, authors and link buttons. */
+.hero {
+  padding: 52px 0 28px;
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: clamp(2.4rem, 8vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  margin: 0 auto 20px;
+  max-width: 720px;
+  color: #333;
+  font-size: clamp(1.1rem, 3.2vw, 1.45rem);
+  line-height: 1.35;
+}
+
+.authors {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 22px;
+  margin: 0 0 6px;
+  font-size: 1.08rem;
+}
+
+.authors a {
+  text-decoration: none;
+}
+
+.authors a:hover {
+  text-decoration: underline;
+}
+
+.affiliations {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 18px;
+  margin: 0 0 24px;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.link-button {
+  display: inline-block;
+  padding: 7px 20px;
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link-button:hover {
+  background: #444;
+}
+
+/* A link without a URL yet looks disabled and ignores clicks. */
+.link-button.is-disabled {
+  background: #e3e3e3;
+  color: #8a8a8a;
+  pointer-events: none;
+}
+
+/* Teaser. */
+.teaser {
+  margin: 0;
+}
+
+.teaser video,
+.teaser img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  background: #0e0f12;
+}
+
+.caption,
+.teaser figcaption {
+  margin-top: 10px;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.tldr {
+  margin: 22px 0 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Sections. */
+.section {
+  padding-top: 52px;
+}
+
+.section h2 {
+  margin: 0 0 12px;
+  font-size: 1.65rem;
+  line-height: 1.25;
+}
+
+.section h3 {
+  margin: 28px 0 8px;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.section p {
+  margin: 0 0 12px;
+}
+
+.text {
+  text-align: justify;
+  hyphens: auto;
+}
+
+@media (max-width: 700px) {
+  .text {
+    text-align: left;
+    hyphens: manual;
+  }
+}
+
+figure {
+  margin: 18px 0;
+}
+
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+figure.narrow img {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+figcaption {
+  margin-top: 8px;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+math {
+  font-size: 1.15em;
+}
+
+math[display="block"] {
+  margin: 14px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Scene tabs and comparison presets. */
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.control-label {
+  min-width: 64px;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.pill {
+  padding: 4px 14px;
+  border: 1px solid #c8c8c8;
+  border-radius: 999px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.pill:hover {
+  border-color: #777;
+}
+
+.pill[aria-pressed="true"] {
+  border-color: #222;
+  background: #222;
+  color: #fff;
+}
+
+.pill:focus-visible {
+  outline: 2px solid #2f6fdd;
+  outline-offset: 2px;
+}
+
+/* The comparison player: one 2x2 grid video, two of its tiles drawn onto a canvas left and right of the split. */
+.cmp-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 162 / 105;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #0e0f12;
+  cursor: ew-resize;
+  touch-action: pan-y pinch-zoom;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Safari decodes a video only while it is visible, so the video fills the stage under the canvas. */
+.cmp-stage video,
+.cmp-stage canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cmp-stage video {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.cmp-stage canvas {
+  background: #0e0f12;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.cmp-split {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  pointer-events: none;
+}
+
+.cmp-split::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+}
+
+.cmp-label {
+  position: absolute;
+  top: 10px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+.cmp-label-left {
+  left: 10px;
+}
+
+.cmp-label-right {
+  right: 10px;
+}
+
+.cmp-label.is-ours {
+  background: rgba(26, 95, 180, 0.85);
+}
+
+.cmp-play {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 13px;
+  line-height: 34px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.cmp-loading {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.cmp-loading[hidden] {
+  display: none;
+}
+
+/* Tables. */
+.table-wrap {
+  margin: 14px 0 6px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
+caption {
+  margin-bottom: 8px;
+  color: #444;
+  font-size: 0.95rem;
+  text-align: left;
+  caption-side: top;
+}
+
+th,
+td {
+  padding: 5px 10px;
+  border-bottom: 1px solid #e3e3e3;
+  text-align: center;
+  white-space: nowrap;
+}
+
+th:first-child,
+td:first-child {
+  text-align: left;
+}
+
+thead th {
+  border-bottom: 1.5px solid #222;
+  font-weight: 600;
+}
+
+tbody tr:last-child td {
+  border-bottom: 1.5px solid #222;
+}
+
+tr.ours td:first-child {
+  font-weight: 600;
+}
+
+td.best {
+  background: #dbe8f8;
+  font-weight: 600;
+}
+
+.group-row td {
+  padding-top: 10px;
+  color: #555;
+  font-style: italic;
+  border-bottom: 0;
+}
+
+/* BibTeX. */
+.bibtex {
+  position: relative;
+}
+
+.bibtex pre {
+  margin: 0;
+  padding: 16px 84px 16px 16px;
+  border-radius: 6px;
+  background: #f5f5f5;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.copy-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 12px;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  border-color: #777;
+}
+
+.footer {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  color: #777;
+  font-size: 0.9rem;
+}

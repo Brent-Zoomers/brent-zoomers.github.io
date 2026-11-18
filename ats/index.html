@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ATS: Anti-Aliased Triangle Splatting</title>
+  <meta name="description" content="ATS integrates each Triangle Splatting window exactly over the pixel in closed form, anti-aliasing triangle radiance fields with less flickering than 2x2 supersampling and enabling multi-scale training.">
+  <meta property="og:title" content="ATS: Anti-Aliased Triangle Splatting with Exact Per-Primitive Integrals">
+  <meta property="og:description" content="An exact, closed-form pixel integral for Triangle Splatting">
+  <meta property="og:url" content="https://brent-zoomers.github.io/ats/">
+  <meta property="og:image" content="https://brent-zoomers.github.io/ats/img/teaser_poster.jpg">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="page">
+
+    <header class="hero">
+      <h1 class="title">ATS</h1>
+      <p class="subtitle">Anti-Aliased Triangle Splatting with Exact Per-Primitive Integrals</p>
+      <p class="authors">
+        <span class="author"><a href="https://brent-zoomers.github.io/">Brent Zoomers</a></span>
+        <span class="author"><a href="https://www.uhasselt.be/en/who-is-who/joni-vanherck">Joni Vanherck</a></span>
+        <span class="author"><a href="https://www.leanderwinters.com/">Leander Winters</a></span>
+        <span class="author"><a href="https://www.uhasselt.be/en/who-is-who/detail/jeroen-put">Jeroen Put</a></span>
+        <span class="author"><a href="https://www.ljorissen.be/projects/">Lode Jorissen</a></span>
+        <span class="author"><a href="https://www.nickmichiels.net/">Nick Michiels</a></span>
+      </p>
+      <p class="affiliations">
+        <span>Digital Future Lab, Flanders Make, Hasselt University</span>
+      </p>
+      <!-- TODO: add the code URL, then remove is-disabled, aria-disabled and tabindex. -->
+      <nav class="links" aria-label="Paper links">
+        <a class="link-button" href="https://arxiv.org/pdf/2611.22512">Paper</a>
+        <a class="link-button" href="https://arxiv.org/abs/2611.22512">arXiv</a>
+        <a class="link-button is-disabled" href="#" aria-disabled="true" tabindex="-1">Code (soon)</a>
+        <a class="link-button is-disabled" href="#" aria-disabled="true" tabindex="-1">Web viewer (soon)</a>
+        <a class="link-button" href="#video">Video</a>
+        <a class="link-button" href="#bibtex">BibTeX</a>
+      </nav>
+    </header>
+
+    <figure class="teaser">
+      <video src="video/teaser.mp4" poster="img/teaser_poster.jpg" autoplay muted loop playsinline controls preload="auto"
+             aria-label="A slow sub-pixel camera pan at one eighth of the training resolution. Left: point sampling, then 2x2 supersampling. Right: ours. The left half flickers, ours stays stable."></video>
+      <figcaption>
+        A slow camera pan at 1/8 of the training resolution, with enlarged pixels.
+        Left: Triangle Splatting with point sampling, then with 2&times;2 supersampling.
+        Right: ours. All three render the same trained triangles.
+      </figcaption>
+    </figure>
+    <p class="tldr">TL;DR: the exact integral of each triangle over the pixel, in closed form, with exact gradients.</p>
+
+    <section class="section" id="abstract">
+      <h2>Abstract</h2>
+      <p class="text">
+        Triangle Splatting represents scenes using semi-transparent triangles, but it evaluates each triangle at the pixel center and culls any triangle with an inradius smaller than one pixel.
+        The former causes severe aliasing, while the latter culls most of the scene at lower resolutions.
+        We show that the integral of the Triangle Splatting window over a pixel admits an exact closed-form solution.
+        The angle bisectors split the triangle into three sub-triangles, in each of which the window is a power of the distance to one edge.
+        Each piece therefore has a closed-form antiderivative, and Green's theorem reduces the integral and its gradients to one term per side of the sub-triangle clipped against the pixel.
+        The integral over the whole triangle, which we show has a closed form, then allows conservative culling, removing only triangles that cannot meet the renderer's alpha cutoff at any pixel.
+        This exact formulation anti-aliases existing models without retraining, exhibits less temporal aliasing than 2&times;2 supersampling, and enables multi-scale training, matching or outperforming supersampled training at reduced resolutions.
+      </p>
+    </section>
+
+    <section class="section" id="flicker">
+      <h2>Less flickering than 2&times;2 supersampling</h2>
+      <p class="text">
+        The camera pans by 1/16 of a pixel per frame at 1/8 of the training resolution, and the pixels are enlarged.
+        All renderers draw the same trained Triangle Splatting model, so only the renderer differs.
+        Point sampling misses triangles that fall between pixel centers, and they pop in and out as the camera moves.
+        Supersampling only samples at a higher resolution, so small triangles still fall between its samples and flicker.
+        Our pixel integral accounts for every triangle that overlaps the pixel, so its color changes smoothly with the motion.
+        Move the mouse over the video, or drag on a phone, to move the split.
+      </p>
+      <div class="control-row" id="cmp-scenes" role="group" aria-label="Scene">
+        <span class="control-label">Scene</span>
+      </div>
+      <div class="control-row" id="cmp-pairs" role="group" aria-label="Comparison">
+        <span class="control-label">Compare</span>
+      </div>
+      <div class="cmp-stage" id="cmp">
+        <video id="cmp-video" muted loop playsinline autoplay preload="auto" aria-hidden="true"></video>
+        <canvas id="cmp-canvas"></canvas>
+        <div class="cmp-split" id="cmp-split"></div>
+        <span class="cmp-label cmp-label-left" id="cmp-label-left"></span>
+        <span class="cmp-label cmp-label-right" id="cmp-label-right"></span>
+        <span class="cmp-loading" id="cmp-loading">Loading&hellip;</span>
+        <button class="cmp-play" id="cmp-play" type="button" aria-label="Pause">&#10074;&#10074;</button>
+      </div>
+      <p class="caption" id="cmp-caption"></p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>
+            Temporal stability: the error of the frame-to-frame differences against a 16&times;16 supersampled render of the same model
+            (&times;10<sup>&minus;3</sup>, lower is better), at 1/4 and 1/8 of the training resolution, averaged over all scenes.
+          </caption>
+          <thead>
+            <tr><th rowspan="2">Renderer</th><th colspan="2">Mip-NeRF 360</th><th colspan="2">Tanks and Temples</th><th colspan="2">Deep Blending</th></tr>
+            <tr><th>1/4</th><th>1/8</th><th>1/4</th><th>1/8</th><th>1/4</th><th>1/8</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Point sampling</td><td>10.1</td><td>20.7</td><td>13.1</td><td>27.0</td><td>3.7</td><td>8.6</td></tr>
+            <tr><td>2&times;2 supersampling</td><td>3.8</td><td>9.2</td><td>5.1</td><td>13.0</td><td>1.4</td><td>3.7</td></tr>
+            <tr class="ours"><td>Ours</td><td class="best">1.9</td><td class="best">3.3</td><td class="best">2.7</td><td class="best">4.5</td><td class="best">0.9</td><td class="best">1.7</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="video">
+      <h2>Zooming out</h2>
+      <p class="text">
+        Trained at a single scale, Triangle Splatting aliases as soon as the camera moves away from the scene.
+        The video zooms out from the training resolution to 1/8 of it and then pans, with point sampling on the left and our pixel integral on the right.
+      </p>
+      <figure class="teaser">
+        <video src="video/supp.mp4" poster="img/poster_supp.jpg" controls playsinline preload="metadata"
+               aria-label="Supplementary video: zooming out and sub-pixel pans, Triangle Splatting with point sampling against ours"></video>
+      </figure>
+      <figure>
+        <img src="img/zoomout.webp" alt="Crops of bonsai, garden and kitchen at the training resolution and at one eighth of it, for point sampling, 2x2 supersampling, ours, Mip-Splatting, Analytic-Splatting, Gaussian Blending and the ground truth" loading="lazy">
+        <figcaption>
+          Zooming out after single-scale training on three Mip-NeRF 360 scenes, at the training resolution (top) and 1/8 of it (bottom), upsampled.
+          Point sampling aliases at 1/8, and 2&times;2 supersampling still leaves some aliasing, for example on the bonsai tablecloth.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="section" id="method">
+      <h2>Method</h2>
+      <p class="text">
+        Triangle Splatting defines each projected triangle through the signed distances <i>d<sub>k</sub></i>(<b>p</b>) = <b>n</b><sub><i>k</i></sub>&middot;<b>p</b> + <i>O<sub>k</sub></i> to its three edges,
+        and a window that falls from 1 at the incenter to 0 on the boundary, with the inradius <i>r</i> and a learned smoothness <i>&sigma;</i>:
+      </p>
+      <math display="block">
+        <mi>I</mi><mo>(</mo><mi mathvariant="bold">p</mi><mo>)</mo><mo>=</mo>
+        <mi>ReLU</mi><mo>(</mo><mo>&minus;</mo><mi>&phi;</mi><mo>(</mo><mi mathvariant="bold">p</mi><mo>)</mo><mo>/</mo><mi>r</mi><msup><mo>)</mo><mi>&sigma;</mi></msup>
+      </math>
+      <math display="block">
+        <mi>&phi;</mi><mo>(</mo><mi mathvariant="bold">p</mi><mo>)</mo><mo>=</mo><munder><mo movablelimits="true">max</mo><mi>k</mi></munder><msub><mi>d</mi><mi>k</mi></msub><mo>(</mo><mi mathvariant="bold">p</mi><mo>)</mo>
+      </math>
+      <p class="text">
+        The renderer evaluates this window only at the pixel center.
+        We integrate it over the whole pixel instead, which equals filtering the window exactly with a box pixel filter.
+        We then alpha-blend with &alpha; = <i>o</i>&thinsp;<i>C</i>, where <i>C</i> is the pixel integral, and the rest of the pipeline is unchanged.
+      </p>
+      <figure>
+        <img src="img/teaser.webp" alt="Left: a triangle split at its bisectors with three pixels: inside one sub-triangle, on the triangle edge, across two sub-triangles. Right: the bicycle at the training scale, 1/4 and 1/8, point sampling on top and ours below." loading="lazy">
+        <figcaption>
+          Left: a pixel (i) inside one sub-triangle, (ii) on the triangle edge, (iii) across two sub-triangles.
+          In each case, the integral is a sum of closed-form terms over the sides of the clipped region.
+          Right: Triangle Splatting with point sampling (top) and ours (bottom) when zooming out.
+        </figcaption>
+      </figure>
+
+      <h3>Splitting at the bisectors</h3>
+      <p class="text">
+        The maximum in the window splits the triangle along its angle bisectors into three sub-triangles.
+        Inside each one, the window depends only on the distance to a single edge, so it is a power of a linear function.
+        We clip each sub-triangle against the pixel, and Green's theorem turns the integral over the clipped region into one closed-form term per side.
+      </p>
+      <figure>
+        <img src="img/pipeline.png" alt="Pipeline: the triangle and a pixel, the three sub-triangles, the sub-triangles clipped to the pixel, and the sides of the clipped regions" loading="lazy">
+        <figcaption>
+          (i) A triangle <i>T</i> and a pixel &Pi;. (ii) The bisectors split the triangle into sub-triangles <i>W</i><sub>0</sub>, <i>W</i><sub>1</sub>, <i>W</i><sub>2</sub>.
+          (iii) Each sub-triangle is clipped to the pixel, giving <i>D<sub>i</sub></i> = &Pi; &cap; <i>W<sub>i</sub></i>.
+          (iv) Green's theorem turns the integral over <i>D<sub>i</sub></i> into one closed-form term per side <i>e<sub>i</sub></i>.
+        </figcaption>
+      </figure>
+
+      <h3>One closed-form term per side</h3>
+      <p class="text">
+        With <i>u</i> = &minus;<i>d</i>(<b>p</b>)/<i>r</i> the normalized distance to the edge and <i>a</i> the position along it, the window of a sub-triangle is <i>u</i><sup><i>&sigma;</i></sup>.
+        Summing over the sides <i>E</i> = (<i>A</i>, <i>B</i>) of each clipped sub-triangle gives the pixel integral
+      </p>
+      <math display="block">
+        <mi>C</mi><mo>=</mo><mo>&minus;</mo><mfrac><mi>r</mi><mrow><mi>&sigma;</mi><mo>+</mo><mn>1</mn></mrow></mfrac>
+        <munder><mo>&sum;</mo><mi>E</mi></munder>
+        <mo>(</mo><msub><mi>a</mi><mi>B</mi></msub><mo>&minus;</mo><msub><mi>a</mi><mi>A</mi></msub><mo>)</mo>
+        <mfrac>
+          <mrow><msubsup><mi>u</mi><mi>B</mi><mrow><mi>&sigma;</mi><mo>+</mo><mn>2</mn></mrow></msubsup><mo>&minus;</mo><msubsup><mi>u</mi><mi>A</mi><mrow><mi>&sigma;</mi><mo>+</mo><mn>2</mn></mrow></msubsup></mrow>
+          <mrow><mo>(</mo><mi>&sigma;</mi><mo>+</mo><mn>2</mn><mo>)</mo><mo>(</mo><msub><mi>u</mi><mi>B</mi></msub><mo>&minus;</mo><msub><mi>u</mi><mi>A</mi></msub><mo>)</mo></mrow>
+        </mfrac>
+      </math>
+      <p class="text">
+        The gradients with respect to the edge normals <b>n</b>, the offsets <i>O</i> and the smoothness <i>&sigma;</i> are integrals of the same kind over the same regions,
+        so a single pass over the sides gives both <i>C</i> and all its gradients, and we train with the exact integral.
+      </p>
+
+      <h3>Conservative culling</h3>
+      <p class="text">
+        Triangle Splatting culls every triangle whose projected inradius is below one pixel.
+        When zooming out, nearly every triangle becomes that small, and the cull removes most of the scene.
+      </p>
+      <figure class="narrow">
+        <img src="img/cull.webp" alt="Counter scene at the training resolution and at one eighth of it; the right half of each image uses the released sub-pixel cull, which destroys the scene at one eighth" loading="lazy">
+        <figcaption>
+          Triangle Splatting at the training resolution (left) and 1/8 of it (right).
+          The left half of each image renders without culling and the right half with the released cull of sub-pixel triangles (27.2&nbsp;dB &rarr; 18.0&nbsp;dB on this scene).
+        </figcaption>
+      </figure>
+      <p class="text">
+        The integral of the window over the whole triangle has a closed form, 2<i>A</i>/((<i>&sigma;</i>+1)(<i>&sigma;</i>+2)) for a triangle of area <i>A</i> in pixels, and no pixel integral can exceed it.
+        We cull a triangle only when even this total, times its opacity, falls below the alpha cutoff of the renderer:
+      </p>
+      <math display="block">
+        <mi>o</mi><mo>&middot;</mo><mfrac><mrow><mn>2</mn><mi>A</mi></mrow><mrow><mo>(</mo><mi>&sigma;</mi><mo>+</mo><mn>1</mn><mo>)</mo><mo>(</mo><mi>&sigma;</mi><mo>+</mo><mn>2</mn><mo>)</mo></mrow></mfrac>
+        <mo>&lt;</mo><msub><mi>&lambda;</mi><mtext>cull</mtext></msub><mo>=</mo><mfrac><mn>1</mn><mn>255</mn></mfrac>
+      </math>
+      <p class="text">Such a triangle stays below the cutoff in every pixel, so the cull never changes the image.</p>
+
+      <h3>Efficient rendering</h3>
+      <p class="text">
+        The pixel integral costs more per triangle and pixel than a point sample, and a low-resolution frame has too few tiles to keep the GPU busy.
+        We render 8&times;8 tiles and cut each tile's depth-sorted triangle list into slices, each rendered by its own thread block and composited front to back.
+        On an RTX 5090, ours renders the Mip-NeRF 360 scenes at 99 to 322 FPS, from the training resolution down to 1/8 of it.
+      </p>
+    </section>
+
+    <section class="section" id="results">
+      <h2>Results</h2>
+      <h3>Zooming out after single-scale training</h3>
+      <p class="text">
+        Every model is trained at the training resolution and tested at 1 to 1/8 of it.
+        At 1/8, ours improves on Triangle Splatting by 4.4&nbsp;dB.
+        2&times;2 supersampling reaches a higher PSNR at the lower scales, but ours has the better SSIM and LPIPS at 1/8 and flickers less.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <caption>Mip-NeRF 360, mean over the nine scenes. Triangle Splatting is the released method without its sub-pixel cull, which breaks down when zooming out.</caption>
+          <thead>
+            <tr><th rowspan="2">Method</th><th colspan="4">PSNR&thinsp;&uarr;</th><th colspan="2">at 1/8</th></tr>
+            <tr><th>1</th><th>1/2</th><th>1/4</th><th>1/8</th><th>SSIM&thinsp;&uarr;</th><th>LPIPS&thinsp;&darr;</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Triangle Splatting</td><td>27.16</td><td>27.78</td><td>26.87</td><td>24.83</td><td>0.765</td><td>0.178</td></tr>
+            <tr><td>Triangle Splatting, 2&times;2 supersampled</td><td class="best">27.27</td><td class="best">28.41</td><td class="best">29.69</td><td class="best">29.90</td><td>0.908</td><td>0.072</td></tr>
+            <tr class="ours"><td>Ours</td><td>27.26</td><td>28.36</td><td>29.33</td><td>29.26</td><td class="best">0.920</td><td class="best">0.062</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Multi-scale training</h3>
+      <p class="text">
+        Because the integral is exact at every resolution, the same renderer trains and tests at every scale.
+        Each iteration renders a training view at a random scale from 1 to 1/8, and every model is trained with the renderer it is tested with.
+        Training with our integral beats training with 2&times;2 supersampling in all but two configurations across the four data sets, and on Mip-NeRF 360 at every scale.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <caption>Mip-NeRF 360 after multi-scale training, mean over the nine scenes.</caption>
+          <thead>
+            <tr><th rowspan="2">Method</th><th colspan="4">PSNR&thinsp;&uarr;</th><th colspan="2">at 1/8</th></tr>
+            <tr><th>1</th><th>1/2</th><th>1/4</th><th>1/8</th><th>SSIM&thinsp;&uarr;</th><th>LPIPS&thinsp;&darr;</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Triangle Splatting</td><td>25.69</td><td>26.87</td><td>27.82</td><td>26.45</td><td>0.835</td><td>0.130</td></tr>
+            <tr><td>Triangle Splatting, 2&times;2 supersampled</td><td>26.65</td><td>27.98</td><td>29.56</td><td>30.27</td><td>0.921</td><td>0.063</td></tr>
+            <tr class="ours"><td>Ours</td><td class="best">26.91</td><td class="best">28.29</td><td class="best">29.93</td><td class="best">31.00</td><td class="best">0.941</td><td class="best">0.046</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Comparison with Gaussian anti-aliasing</h3>
+      <p class="text">
+        Without our integral, triangles fall 5.5&nbsp;dB behind the best Gaussian method at 1/8 on Mip-NeRF 360.
+        Anti-aliasing closes most of this gap: after single-scale training, ours is ahead of Mip-Splatting and Analytic-Splatting at 1/8 and second only to Gaussian Blending, which also models the opacity distribution within the pixel.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <caption>Single-scale training, tested at the training resolution (1) and at 1/8 of it.</caption>
+          <thead>
+            <tr><th rowspan="2">Method</th><th colspan="3">Mip-NeRF 360, 1</th><th colspan="3">Mip-NeRF 360, 1/8</th></tr>
+            <tr><th>PSNR&thinsp;&uarr;</th><th>SSIM&thinsp;&uarr;</th><th>LPIPS&thinsp;&darr;</th><th>PSNR&thinsp;&uarr;</th><th>SSIM&thinsp;&uarr;</th><th>LPIPS&thinsp;&darr;</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>3DGS</td><td>27.52</td><td>0.814</td><td>0.217</td><td>18.79</td><td>0.567</td><td>0.240</td></tr>
+            <tr><td>Mip-Splatting</td><td class="best">27.66</td><td class="best">0.827</td><td>0.190</td><td>28.89</td><td>0.925</td><td class="best">0.060</td></tr>
+            <tr><td>Analytic-Splatting</td><td>27.52</td><td>0.816</td><td>0.215</td><td>28.47</td><td>0.917</td><td>0.074</td></tr>
+            <tr><td>Gaussian Blending</td><td>26.86</td><td>0.803</td><td>0.237</td><td class="best">30.37</td><td class="best">0.931</td><td>0.068</td></tr>
+            <tr class="ours"><td>Ours</td><td>27.26</td><td>0.819</td><td class="best">0.187</td><td>29.26</td><td>0.920</td><td>0.062</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="bibtex">
+      <h2>BibTeX</h2>
+      <div class="bibtex">
+        <button class="copy-button" id="copy-bibtex" type="button">Copy</button>
+        <pre id="bibtex-entry">@misc{zoomers2026atsantialiasedtrianglesplatting,
+      title={ATS: Anti-Aliased Triangle Splatting with Exact Per-Primitive Integrals}, 
+      author={Brent Zoomers and Joni Vanherck and Leander Winters and Jeroen Put and Lode Jorissen and Nick Michiels},
+      year={2026},
+      eprint={2611.22512},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2611.22512}, 
+}</pre>
+      </div>
+    </section>
+
+    <section class="section" id="acknowledgements">
+      <h2>Acknowledgements</h2>
+      <p class="text">
+        This research was partly funded by the FWO fellowship grants (1SHDZ24N, 1S80926N), the Special Research Fund (BOF) of Hasselt University (R-14360, R-14436), the Flanders Make SBO projects NORM.AI (R-13936), and ALARMM (R-15482).
+        This work was made possible by MAXVR-INFRA, a scalable and flexible infrastructure that facilitates the transition to digital-physical work environments.
+      </p>
+      <p class="text">
+        This work builds on <a href="https://trianglesplatting.github.io/">Triangle Splatting</a>; we thank its authors for releasing their code.
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script>
+  // Comparison player. Each video/cmp/<scene>.mp4 is a 2x2 grid of the same pan:
+  // point | ssaa2 on top, ours | reference below. Both sides are cut from the one video, so they stay in sync.
+  (function () {
+    'use strict';
+    var SCENES = [['garden', 'Garden'], ['bicycle', 'Bicycle'], ['flowers', 'Flowers'],
+                  ['truck', 'Truck'], ['train', 'Train'], ['playroom', 'Playroom']];
+    var TILE = {point: 0, ssaa2: 1, ours: 2, reference: 3};
+    var NAME = {point: 'Point sampling', ssaa2: '2×2 supersampling', ours: 'Ours',
+                reference: '16×16 supersampling (reference)'};
+    var PAIRS = [['ssaa2', 'ours'], ['point', 'ours'], ['point', 'ssaa2'], ['ours', 'reference']];
+    var st = {scene: 'garden', pair: 0, split: 0.5};
+
+    var stage = document.getElementById('cmp'), video = document.getElementById('cmp-video');
+    var canvas = document.getElementById('cmp-canvas'), ctx = canvas.getContext('2d');
+    var splitBar = document.getElementById('cmp-split'), loading = document.getElementById('cmp-loading');
+    var labL = document.getElementById('cmp-label-left'), labR = document.getElementById('cmp-label-right');
+    var playBtn = document.getElementById('cmp-play'), caption = document.getElementById('cmp-caption');
+
+    function pills(containerId, items, isOn, onPick) {
+      var box = document.getElementById(containerId), buttons = [];
+      items.forEach(function (item, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pill';
+        b.textContent = item;
+        b.addEventListener('click', function () {
+          onPick(i);
+          buttons.forEach(function (x, j) { x.setAttribute('aria-pressed', String(isOn(j))); });
+        });
+        b.setAttribute('aria-pressed', String(isOn(i)));
+        box.appendChild(b);
+        buttons.push(b);
+      });
+    }
+
+    function draw() {
+      var tw = video.videoWidth / 2, th = video.videoHeight / 2;
+      if (!tw || video.readyState < 2) return;
+      if (canvas.width !== tw || canvas.height !== th) {
+        canvas.width = tw;
+        canvas.height = th;
+        stage.style.aspectRatio = tw + ' / ' + th;
+      }
+      ctx.imageSmoothingEnabled = false;
+      var l = TILE[PAIRS[st.pair][0]], r = TILE[PAIRS[st.pair][1]], x = Math.round(st.split * tw);
+      if (x > 0) ctx.drawImage(video, (l % 2) * tw, (l >> 1) * th, x, th, 0, 0, x, th);
+      if (x < tw) ctx.drawImage(video, (r % 2) * tw + x, (r >> 1) * th, tw - x, th, x, 0, tw - x, th);
+    }
+
+    // Redraw on every display frame while the player is on screen.
+    var visible = true;
+    (function loop() {
+      if (visible) draw();
+      requestAnimationFrame(loop);
+    })();
+    video.addEventListener('loadeddata', function () { loading.hidden = true; draw(); });
+    video.addEventListener('error', function () { loading.textContent = 'Could not load this video'; });
+    video.addEventListener('seeked', draw);
+
+    function setPlaying(on) {
+      playBtn.innerHTML = on ? '&#10074;&#10074;' : '&#9654;';
+      playBtn.setAttribute('aria-label', on ? 'Pause' : 'Play');
+    }
+    function play() {
+      var p = video.play();
+      if (p && p.catch) p.catch(function () { setPlaying(false); });
+      setPlaying(true);
+    }
+    var userPaused = false;
+    playBtn.addEventListener('click', function () {
+      if (video.paused) { userPaused = false; play(); } else { userPaused = true; video.pause(); setPlaying(false); }
+    });
+
+    // Pause the video while it is off screen.
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        visible = entries[0].isIntersecting;
+        if (!visible) video.pause(); else if (!userPaused) play();
+      }).observe(stage);
+    }
+
+    function labels() {
+      var p = PAIRS[st.pair];
+      labL.textContent = NAME[p[0]];
+      labR.textContent = NAME[p[1]];
+      labL.classList.toggle('is-ours', p[0] === 'ours');
+      labR.classList.toggle('is-ours', p[1] === 'ours');
+      draw();
+    }
+    function loadScene() {
+      loading.textContent = 'Loading\u2026';
+      loading.hidden = false;
+      video.src = 'video/cmp/' + st.scene + '.mp4';
+      video.load();
+      if (!userPaused) play();
+      var name = SCENES.filter(function (s) { return s[0] === st.scene; })[0][1];
+      caption.textContent = name + ', 1/8 of the training resolution, the camera moves 1/16 of a pixel per frame.';
+    }
+
+    pills('cmp-scenes', SCENES.map(function (s) { return s[1]; }),
+          function (i) { return SCENES[i][0] === st.scene; },
+          function (i) { st.scene = SCENES[i][0]; loadScene(); });
+    pills('cmp-pairs', PAIRS.map(function (p) { return NAME[p[0]].split(' (')[0] + ' vs ' + NAME[p[1]].split(' (')[0]; }),
+          function (i) { return i === st.pair; },
+          function (i) { st.pair = i; labels(); });
+
+    // The split follows the mouse; on touch screens it follows a horizontal drag.
+    function follow(e) {
+      var r = stage.getBoundingClientRect();
+      if (r.width <= 0) return;
+      st.split = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      splitBar.style.left = (st.split * 100) + '%';
+      draw();
+    }
+    stage.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'mouse' || stage.hasPointerCapture(e.pointerId)) follow(e);
+    });
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.target === playBtn) return;
+      if (e.pointerType !== 'mouse') stage.setPointerCapture(e.pointerId);
+      follow(e);
+    });
+
+    labels();
+    loadScene();
+  })();
+
+  // Copy the BibTeX entry.
+  (function () {
+    var button = document.getElementById('copy-bibtex'), entry = document.getElementById('bibtex-entry');
+    function done() {
+      button.textContent = 'Copied';
+      setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+    }
+    button.addEventListener('click', function () {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(entry.textContent).then(done);
+      } else {
+        var range = document.createRange();
+        range.selectNodeContents(entry);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        try { if (document.execCommand('copy')) done(); } catch (err) { /* the text stays selected */ }
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
